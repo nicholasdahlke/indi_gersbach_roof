@@ -50,10 +50,10 @@ bool GersbachRoof::ISNewSwitch(const char *dev, const char *name, ISState *state
 
 bool GersbachRoof::Handshake()
 {
-    snapConnection->writeData(1, &hi);
+    snapConnection->writeData(7, &hi);
     uint8_t buffer = {0};
-    snapConnection->readData(2, &buffer);
-    snapConnection->writeData(1, &lo);
+    snapConnection->readData(8, &buffer);
+    snapConnection->writeData(7, &lo);
     if (buffer == 1)
         return true;
     return false;
