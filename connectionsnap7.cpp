@@ -1,6 +1,8 @@
 #include "connectionsnap7.h"
 #include "indilogger.h"
 
+#include <cstring>
+
 namespace Connection
 {
     extern const char *CONNECTION_TAB;
@@ -11,22 +13,27 @@ namespace Connection
         double defaultLocalTsap = 0x000;
         double defaultRemoteTsap = 0x000;
 
-        IUFillText(&AdressT[0], "HOST", "Host address", defaultHostname);
-        IUFillNumber(&LocalTsapN[0], "LOCALTSAP", "Local TSAP", "%#x", MIN_TSAP, MAX_TSAP, 1, defaultLocalTsap);
-        IUFillNumber(&RemoteTsapN[0], "REMOTETSAP", "Remote TSAP", "%#x", MIN_TSAP, MAX_TSAP, 1, defaultRemoteTsap);
+        IUFillText(&AddressT[0], "HOST", "Host address", defaultHostname);
+        IUFillTextVector(&AddressTP, AddressT, 1, getDeviceName(), "SNAP7_ADDRESS", "PLC address", CONNECTION_TAB,
+                         IP_RW, 60, IPS_IDLE);
+
+        IUFillNumber(&TsapN[0], "LOCALTSAP", "Local TSAP", "%#x", MIN_TSAP, MAX_TSAP, 1, defaultLocalTsap);
+        IUFillNumber(&TsapN[1], "REMOTETSAP", "Remote TSAP", "%#x", MIN_TSAP, MAX_TSAP, 1, defaultRemoteTsap);
+        IUFillNumberVector(&TsapNP, TsapN, 2, getDeviceName(), "SNAP7_TSAP", "PLC TSAP", CONNECTION_TAB,
+                           IP_RW, 60, IPS_IDLE);
     }
 
     bool INDISnap::Connect()
     {
-        if (AdressT[0].text == nullptr || AdressT[0].text[0] == '\0')
+        if (AddressT[0].text == nullptr || AddressT[0].text[0] == '\0')
         {
             LOG_ERROR("Error! Server address is missing or invalid.");
             return false;
         }
-        const char *hostname = AdressT[0].text;
+        const char *hostname = AddressT[0].text;
 
-        const double localTsap = LocalTsapN[0].value;
-        const double remoteTsap = RemoteTsapN[0].value;
+        const word localTsap = static_cast<word>(TsapN[0].value);
+        const word remoteTsap = static_cast<word>(TsapN[1].value);
 
         LOGF_INFO("Connecting to %s with Local TSAP %#x and Remote TSAP %#x", hostname, localTsap, remoteTsap);
 
@@ -81,31 +88,76 @@ namespace Connection
 
     void INDISnap::Activated()
     {
-        m_Device->defineProperty(&AdressTP);
-        m_Device->defineProperty(&LocalTsapNP);
-        m_Device->defineProperty(&RemoteTsapNP);
+        m_Device->defineProperty(&AddressTP);
+        m_Device->defineProperty(&TsapNP);
     }
 
     void INDISnap::Deactivated()
     {
-        m_Device->deleteProperty(AdressTP.name);
-        m_Device->deleteProperty(RemoteTsapNP.name);
-        m_Device->deleteProperty(LocalTsapNP.name);
+        m_Device->deleteProperty(AddressTP.name);
+        m_Device->deleteProperty(TsapNP.name);
+    }
+
+    bool INDISnap::ISNewText(const char *dev, const char *name, char *texts[], char *names[], int n)
+    {
+        if (dev != nullptr && std::strcmp(dev, getDeviceName()) != 0)
+            return false;
+
+        if (std::strcmp(name, AddressTP.name) != 0)
+            return false;
+
+        for (int i = 0; i < n; ++i)
+        {
+            IText *text = IUFindText(&AddressTP, names[i]);
+            if (text != nullptr)
+                IUSaveText(text, texts[i]);
+        }
+
+        AddressTP.s = IPS_OK;
+        IDSetText(&AddressTP, "Snap7 address updated.");
+        return true;
+    }
+
+    bool INDISnap::ISNewNumber(const char *dev, const char *name, double values[], char *names[], int n)
+    {
+        if (dev != nullptr && std::strcmp(dev, getDeviceName()) != 0)
+            return false;
+
+        if (std::strcmp(name, TsapNP.name) != 0)
+            return false;
+
+        for (int i = 0; i < n; ++i)
+        {
+            INumber *number = IUFindNumber(&TsapNP, names[i]);
+            if (number != nullptr)
+                number->value = values[i];
+        }
+
+        TsapNP.s = IPS_OK;
+        IDSetNumber(&TsapNP, "Snap7 TSAP values updated.");
+        return true;
+    }
+
+    bool INDISnap::saveConfigItems(FILE *fp)
+    {
+        IUSaveConfigText(fp, &AddressTP);
+        IUSaveConfigNumber(fp, &TsapNP);
+        return true;
     }
 
     void INDISnap::setDefaultHost(const char *host)
     {
-        IUSaveText(&AdressT[0], host);
+        IUSaveText(&AddressT[0], host);
     }
 
     void INDISnap::setDefaultLocalTsap(double localTsap)
     {
-        //TODO: Implement this thing
+        TsapN[0].value = localTsap;
     }
 
     void INDISnap::setDefaultRemoteTsap(double remoteTsap)
     {
-        //TODO: Implementation missing
+        TsapN[1].value = remoteTsap;
     }
 
     bool INDISnap::writeData(int position, uint8_t * value)

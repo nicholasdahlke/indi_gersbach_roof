@@ -24,6 +24,9 @@ namespace Connection
 
         virtual void Activated() override;
         virtual void Deactivated() override;
+        virtual bool ISNewText(const char *dev, const char *name, char *texts[], char *names[], int n) override;
+        virtual bool ISNewNumber(const char *dev, const char *name, double values[], char *names[], int n) override;
+        virtual bool saveConfigItems(FILE *fp) override;
 
         virtual std::string name() override
         {
@@ -45,14 +48,11 @@ namespace Connection
     protected:
 
 
-        ITextVectorProperty AdressTP{};
-        IText AdressT[1] {};
+        ITextVectorProperty AddressTP{};
+        IText AddressT[1] {};
 
-        INumberVectorProperty LocalTsapNP{};
-        INumber LocalTsapN[1] {};
-
-        INumberVectorProperty RemoteTsapNP{};
-        INumber RemoteTsapN[1] {};
+        INumberVectorProperty TsapNP{};
+        INumber TsapN[2] {};
 
         TS7Client *S7Client{};
 
