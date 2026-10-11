@@ -1,41 +1,59 @@
-# find libsnap7
+# Find libsnap7.
 #
-# exports:
+# Exports:
+#   LibSnap7_FOUND
+#   LibSnap7_INCLUDE_DIRS
+#   LibSnap7_LIBRARIES
 #
-#   LibSNAP7_FOUND
-#   LibSNAP7_INCLUDE_DIRS
-#   LibSNAP7_LIBRARIES
-#
+# Optional hints:
+#   -DLibSnap7_ROOT=<path>
+#   -DSNAP7_ROOT=<path>
+#   SNAP7_ROOT=<path> in the environment
 
-find_package(PkgConfig REQUIRED)
+find_package(PkgConfig QUIET)
+if(PkgConfig_FOUND)
+    pkg_check_modules(PC_LibSnap7 QUIET snap7 libsnap7)
+endif()
 
-# Use pkg-config to get hints about paths
-#pkg_check_modules(LibSNAP7_PKGCONF REQUIRED libsnap7)
+set(_LibSnap7_ROOT_HINTS)
+foreach(_LibSnap7_ROOT_VAR LibSnap7_ROOT SNAP7_ROOT)
+    if(DEFINED ${_LibSnap7_ROOT_VAR})
+        list(APPEND _LibSnap7_ROOT_HINTS "${${_LibSnap7_ROOT_VAR}}")
+    endif()
+endforeach()
+if(DEFINED ENV{SNAP7_ROOT})
+    list(APPEND _LibSnap7_ROOT_HINTS "$ENV{SNAP7_ROOT}")
+endif()
 
-# Include dir
-find_path(LibSNAP7_INCLUDE_DIR
+find_path(
+        LibSnap7_INCLUDE_DIR
         NAMES snap7.h
-        PATHS ${LibSNAP7_PKGCONF_INCLUDE_DIRS}
-        )
-
-find_library(
-        LibSNAP7_LIBRARY
-        NAMES snap7 libsnap7
-        PATHS /usr/lib
-        #   PATH_SUFFIXES lib
-        #   NO_DEFAULT_PATH
+        HINTS
+            ${_LibSnap7_ROOT_HINTS}
+            ${PC_LibSnap7_INCLUDE_DIRS}
+        PATH_SUFFIXES include include/snap7
+        DOC "Include directory for Snap7"
 )
 
-#FIND_PACKAGE_HANDLE_STANDARD_ARGS(LibSNAP7 DEFAULT_MSG LibSNAP7_LIBRARY LibSNAP7_INCLUDE_DIR)
+find_library(
+        LibSnap7_LIBRARY
+        NAMES snap7 libsnap7
+        HINTS
+            ${_LibSnap7_ROOT_HINTS}
+            ${PC_LibSnap7_LIBRARY_DIRS}
+        PATH_SUFFIXES lib lib64
+        DOC "Snap7 library"
+)
 
-message("LibSNAP7_INCLUDE_DIR ${LibSNAP7_INCLUDE_DIR}")
-message("LibSNAP7_LIBRARY ${LibSNAP7_LIBRARY}")
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(
+        LibSnap7
+        REQUIRED_VARS LibSnap7_LIBRARY LibSnap7_INCLUDE_DIR
+)
 
-set(LibSnap7_LIBRARIES ${LibSNAP7_LIBRARY})
-set(LibSnap7_INCLUDE_DIRS ${LibSNAP7_INCLUDE_DIR})
-set(LibSnap7_FOUND yes)
+if(LibSnap7_FOUND)
+    set(LibSnap7_LIBRARIES "${LibSnap7_LIBRARY}")
+    set(LibSnap7_INCLUDE_DIRS "${LibSnap7_INCLUDE_DIR}")
+endif()
 
-# Set the include dir variables and the libraries and let libfind_process do the rest.
-# NOTE: Singular variables for this library, plural for libraries this this lib depends on.
-#set(LibSNAP7_PROCESS_INCLUDES LibSNAP7_INCLUDE_DIR)
-#set(LibSNAP7_PROCESS_LIBS LibSNAP7_LIBRARY)
+mark_as_advanced(LibSnap7_INCLUDE_DIR LibSnap7_LIBRARY)

@@ -1,6 +1,7 @@
+cmake_minimum_required(VERSION 3.5)
+
 # define the project name
 project(indi_gersbach_roof C CXX)
-cmake_minimum_required(VERSION 2.8)
 
 include(GNUInstallDirs)
 
@@ -40,6 +41,10 @@ include_directories( ${EV_INCLUDE_DIR})
 include_directories(${LibSnap7_INCLUDE_DIRS})
 
 include(CMakeCommon)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 # tell cmake to build our executable
 add_executable(
